@@ -1,0 +1,80 @@
+{% extends 'heritage/base.html' %}
+{% block content %}
+<style>
+  body {
+    background: #f3f4f6;
+  }
+  .chat-container {
+    max-width: 600px;
+    margin: auto;
+  }
+  .chat-bubble {
+    padding: 10px 15px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    max-width: 80%;
+  }
+  .user-bubble {
+    background-color: #d1e7dd;
+    align-self: flex-end;
+    text-align: right;
+  }
+  .bot-bubble {
+    background-color: #e2e3e5;
+    align-self: flex-start;
+    text-align: left;
+  }
+</style>
+
+<div class="container chat-container mt-5">
+  <div class="card shadow-lg border-0">
+    <div class="card-header bg-primary text-white text-center">
+      <h4 class="mb-0">💬 Chat with <strong>CulturEra Bot</strong></h4>
+      <small>Ask me about heritage places like Hampi, Belur, etc.</small>
+    </div>
+
+    <div class="card-body">
+      <form method="post" class="mb-3 d-flex flex-column">
+        {% csrf_token %}
+        <div class="input-group">
+          <input type="text" name="query" placeholder="Ask something about heritage..." class="form-control" required>
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-send-fill"></i> Send
+          </button>
+        </div>
+      </form>
+
+      {% if query %}
+        <div class="d-flex flex-column">
+          <div class="chat-bubble user-bubble ms-auto">
+            <strong>You:</strong> {{ query }}
+          </div>
+          <div class="chat-bubble bot-bubble me-auto">
+            <strong>Bot:</strong> {{ response }}
+          </div>
+        </div>
+      {% elif response %}
+        <div class="alert alert-info text-center">{{ response }}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Optionally include Bootstrap Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+{% endblock %}
+
+
+
+{% comment %} {% extends 'heritage/base.html' %}
+{% block content %}
+<h2>Chat with CulturEra Bot 🤖</h2>
+<form method="post">
+  {% csrf_token %}
+  <input type="text" name="query" placeholder="Ask something..." class="form-control mb-2" required>
+  <button class="btn btn-primary">Ask</button>
+</form>
+{% if response %}
+<div class="alert alert-info mt-2">{{ response }}</div>
+{% endif %}
+{% endblock %} {% endcomment %}

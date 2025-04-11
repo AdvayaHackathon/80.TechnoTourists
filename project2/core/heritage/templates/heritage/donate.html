@@ -1,0 +1,16 @@
+{% extends 'heritage/base.html' %}
+{% block content %}
+<h2>Support Cultural Preservation</h2>
+<p>Your contribution helps keep our heritage alive!</p>
+
+<form>
+  <label>Enter Amount (INR):</label>
+  <input type="number" class="form-control mb-2" placeholder="e.g. 100">
+  <select class="form-control mb-2">
+    <option>Pay via UPI</option>
+    <option>PayPal</option>
+    <option>Credit Card</option>
+  </select>
+  <button class="btn btn-success">Donate</button>
+</form>
+{% endblock %}

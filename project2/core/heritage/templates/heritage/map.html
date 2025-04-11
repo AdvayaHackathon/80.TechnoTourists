@@ -1,0 +1,993 @@
+{% extends 'heritage/base.html' %}
+{% block content %}
+
+<h2 class="text-center mt-4">Explore India's Cultural Richness</h2>
+
+<div class="container my-4">
+    <!-- State Buttons -->
+    <div class="mb-4">
+        <label class="form-label">Select State</label>
+        <div class="row row-cols-2 row-cols-md-4 g-3" id="stateButtonGrid">
+            <div class="col"><button class="btn btn-outline-dark w-100" data-state="karnataka">Karnataka</button></div>
+            <div class="col"><button class="btn btn-outline-dark w-100" data-state="rajasthan">Rajasthan</button></div>
+            <div class="col"><button class="btn btn-outline-dark w-100" data-state="tamilnadu">Tamil Nadu</button></div>
+            <div class="col"><button class="btn btn-outline-dark w-100" data-state="kerala">Kerala</button></div>
+            <div class="col"><button class="btn btn-outline-dark w-100" data-state="uttarpradesh">Uttar Pradesh</button></div>
+            <div class="col"><button class="btn btn-outline-dark w-100" data-state="westbengal">West Bengal</button></div>
+        </div>
+    </div>
+
+    <!-- District Buttons -->
+    <div id="districtGridContainer" class="mb-4" style="display:none;">
+        <label class="form-label">Select District</label>
+        <div class="row row-cols-2 row-cols-md-3 g-3" id="districtButtonGrid">
+            <!-- District buttons inserted dynamically -->
+        </div>
+    </div>
+
+    <!-- District Info Card -->
+    <div id="districtInfo" class="mt-4" style="display:none;">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h4 id="districtName" class="card-title text-primary"></h4>
+                <p class="card-text">
+                    <strong>Food:</strong> <span id="foodText"></span><br>
+                    <strong>Festivals:</strong> <span id="festivalText"></span>
+                </p>
+                <button class="btn btn-outline-success" onclick="showMap()">View Map</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div id="mapContainer" style="display:none;">
+        <h5 class="mt-4">Tourist Map</h5>
+        <div id="map" style="height: 400px;" class="rounded shadow-sm"></div>
+    </div>
+</div>
+
+<!-- Leaflet Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    const data = {
+        karnataka: {
+            "Bengaluru": {
+                food: "Bisi Bele Bath, Masala Dosa",
+                festivals: "Karaga Festival, Kannada Rajyotsava",
+                lat: 12.9716,
+                lng: 77.5946
+            },
+            "Mysuru": {
+                food: "Mysore Pak, Idli-Vada",
+                festivals: "Dasara Festival",
+                lat: 12.2958,
+                lng: 76.6394
+            }
+        },
+        rajasthan: {
+            "Jaipur": {
+                food: "Dal Baati Churma, Ghevar",
+                festivals: "Teej, Jaipur Literature Fest",
+                lat: 26.9124,
+                lng: 75.7873
+            },
+            "Jodhpur": {
+                food: "Mirchi Bada, Mawa Kachori",
+                festivals: "Marwar Festival",
+                lat: 26.2389,
+                lng: 73.0243
+            }
+        },
+        tamilnadu: {
+            "Chennai": {
+                food: "Sambar, Pongal, Filter Coffee",
+                festivals: "Pongal, Music Season",
+                lat: 13.0827,
+                lng: 80.2707
+            },
+            "Madurai": {
+                food: "Jigarthanda, Parotta",
+                festivals: "Chithirai Festival",
+                lat: 9.9252,
+                lng: 78.1198
+            }
+        },
+        kerala: {
+            "Kochi": {
+                food: "Appam with Stew, Kerala Sadya",
+                festivals: "Onam, Cochin Carnival",
+                lat: 9.9312,
+                lng: 76.2673
+            },
+            "Alappuzha": {
+                food: "Seafood, Payasam",
+                festivals: "Nehru Trophy Boat Race",
+                lat: 9.4981,
+                lng: 76.3388
+            }
+        },
+        uttarpradesh: {
+            "Agra": {
+                food: "Petha, Mughlai Cuisine",
+                festivals: "Taj Mahotsav",
+                lat: 27.1767,
+                lng: 78.0081
+            },
+            "Varanasi": {
+                food: "Kachori-Sabzi, Rabri",
+                festivals: "Dev Deepawali, Ganga Mahotsav",
+                lat: 25.3176,
+                lng: 82.9739
+            }
+        },
+        westbengal: {
+            "Kolkata": {
+                food: "Rasgulla, Fish Curry",
+                festivals: "Durga Puja, Poila Boishakh",
+                lat: 22.5726,
+                lng: 88.3639
+            },
+            "Darjeeling": {
+                food: "Momos, Thukpa",
+                festivals: "Teej, Losar",
+                lat: 27.0360,
+                lng: 88.2627
+            }
+        }
+    };
+
+    const stateButtons = document.querySelectorAll("#stateButtonGrid button");
+    const districtGridContainer = document.getElementById("districtGridContainer");
+    const districtButtonGrid = document.getElementById("districtButtonGrid");
+    const districtInfo = document.getElementById("districtInfo");
+    const districtName = document.getElementById("districtName");
+    const foodText = document.getElementById("foodText");
+    const festivalText = document.getElementById("festivalText");
+    const mapContainer = document.getElementById("mapContainer");
+
+    let selectedState = null;
+    let map, currentMarker;
+
+    stateButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            selectedState = btn.getAttribute("data-state");
+
+            // Highlight selected button
+            stateButtons.forEach(b => b.classList.remove("bg-warning", "text-white"));
+            btn.classList.add("bg-warning", "text-white");
+
+            // Clear previous districts
+            districtButtonGrid.innerHTML = "";
+
+            // Add district buttons dynamically
+            Object.entries(data[selectedState]).forEach(([district, details]) => {
+                const col = document.createElement("div");
+                col.className = "col";
+                col.innerHTML = `
+                    <button class="btn btn-outline-primary w-100 rounded-pill fw-semibold" data-district="${district}">
+                        ${district}
+                    </button>`;
+                col.querySelector("button").addEventListener("click", () => {
+                    showDistrictInfo(district, details);
+                });
+                districtButtonGrid.appendChild(col);
+            });
+
+            districtGridContainer.style.display = "block";
+            districtInfo.style.display = "none";
+            mapContainer.style.display = "none";
+        });
+    });
+
+    function showDistrictInfo(district, details) {
+        districtInfo.style.display = "block";
+        mapContainer.style.display = "none";
+
+        districtName.textContent = district;
+        foodText.textContent = details.food;
+        festivalText.textContent = details.festivals;
+    }
+
+    function showMap() {
+        const dist = districtName.textContent;
+        const details = data[selectedState][dist];
+
+        mapContainer.style.display = "block";
+
+        if (!map) {
+            map = L.map("map").setView([details.lat, details.lng], 8);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        } else {
+            map.setView([details.lat, details.lng], 8);
+            if (currentMarker) map.removeLayer(currentMarker);
+        }
+
+        currentMarker = L.marker([details.lat, details.lng]).addTo(map)
+            .bindPopup(`<b>${dist}</b><br>${details.food}<br>${details.festivals}`).openPopup();
+    }
+</script>
+
+{% endblock %}
+
+
+{% comment %} {% extends 'heritage/base.html' %}
+{% block content %}
+
+<h2 class="text-center mt-4">Explore India's Cultural Richness</h2>
+
+<div class="container my-4">
+
+    <!-- State Button Grid -->
+    <div class="row row-cols-2 row-cols-md-3 g-3 mb-4" id="stateButtonGrid">
+        <div class="col" data-state="karnataka">
+            <button class="btn btn-light w-100 border border-warning rounded-pill py-2 fw-bold">Karnataka</button>
+        </div>
+        <div class="col" data-state="rajasthan">
+            <button class="btn btn-light w-100 border border-warning rounded-pill py-2 fw-bold">Rajasthan</button>
+        </div>
+        <div class="col" data-state="tamilnadu">
+            <button class="btn btn-light w-100 border border-warning rounded-pill py-2 fw-bold">Tamil Nadu</button>
+        </div>
+        <div class="col" data-state="kerala">
+            <button class="btn btn-light w-100 border border-warning rounded-pill py-2 fw-bold">Kerala</button>
+        </div>
+        <div class="col" data-state="uttarpradesh">
+            <button class="btn btn-light w-100 border border-warning rounded-pill py-2 fw-bold">Uttar Pradesh</button>
+        </div>
+        <div class="col" data-state="westbengal">
+            <button class="btn btn-light w-100 border border-warning rounded-pill py-2 fw-bold">West Bengal</button>
+        </div>
+    </div>
+
+    <!-- District Dropdown -->
+    <div id="districtSelectorContainer" class="mb-3" style="display:none;">
+        <label for="districtSelector" class="form-label">Select District</label>
+        <select class="form-select" id="districtSelector">
+            <option value="">-- Select a District --</option>
+        </select>
+    </div>
+
+    <!-- District Button Grid -->
+
+
+    <!-- District Info Card -->
+    <div id="districtInfo" class="mt-4" style="display:none;">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h4 id="districtName" class="card-title text-primary"></h4>
+                <p class="card-text">
+                    <strong>Food:</strong> <span id="foodText"></span><br>
+                    <strong>Festivals:</strong> <span id="festivalText"></span>
+                </p>
+                <button class="btn btn-outline-success" onclick="showMap()">View Map</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Display -->
+    <div id="mapContainer" style="display:none;">
+        <h5 class="mt-4">Tourist Map</h5>
+        <div id="map" style="height: 400px;" class="rounded shadow-sm"></div>
+    </div>
+</div>
+
+<!-- Leaflet Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    const data = {
+        karnataka: {
+            "Bengaluru": {
+                food: "Bisi Bele Bath, Masala Dosa",
+                festivals: "Karaga Festival, Kannada Rajyotsava",
+                lat: 12.9716,
+                lng: 77.5946
+            },
+            "Mysuru": {
+                food: "Mysore Pak, Idli-Vada",
+                festivals: "Dasara Festival",
+                lat: 12.2958,
+                lng: 76.6394
+            }
+        },
+        rajasthan: {
+            "Jaipur": {
+                food: "Dal Baati Churma, Ghevar",
+                festivals: "Teej, Jaipur Literature Fest",
+                lat: 26.9124,
+                lng: 75.7873
+            },
+            "Jodhpur": {
+                food: "Mirchi Bada, Mawa Kachori",
+                festivals: "Marwar Festival",
+                lat: 26.2389,
+                lng: 73.0243
+            }
+        },
+        tamilnadu: {
+            "Chennai": {
+                food: "Sambar, Pongal, Filter Coffee",
+                festivals: "Pongal, Music Season",
+                lat: 13.0827,
+                lng: 80.2707
+            },
+            "Madurai": {
+                food: "Jigarthanda, Parotta",
+                festivals: "Chithirai Festival",
+                lat: 9.9252,
+                lng: 78.1198
+            }
+        },
+        kerala: {
+            "Kochi": {
+                food: "Appam with Stew, Kerala Sadya",
+                festivals: "Onam, Cochin Carnival",
+                lat: 9.9312,
+                lng: 76.2673
+            },
+            "Alappuzha": {
+                food: "Seafood, Payasam",
+                festivals: "Nehru Trophy Boat Race",
+                lat: 9.4981,
+                lng: 76.3388
+            }
+        },
+        uttarpradesh: {
+            "Agra": {
+                food: "Petha, Mughlai Cuisine",
+                festivals: "Taj Mahotsav",
+                lat: 27.1767,
+                lng: 78.0081
+            },
+            "Varanasi": {
+                food: "Kachori-Sabzi, Rabri",
+                festivals: "Dev Deepawali, Ganga Mahotsav",
+                lat: 25.3176,
+                lng: 82.9739
+            }
+        },
+        westbengal: {
+            "Kolkata": {
+                food: "Rasgulla, Fish Curry",
+                festivals: "Durga Puja, Poila Boishakh",
+                lat: 22.5726,
+                lng: 88.3639
+            },
+            "Darjeeling": {
+                food: "Momos, Thukpa",
+                festivals: "Teej, Losar",
+                lat: 27.0360,
+                lng: 88.2627
+            }
+        }
+    };
+
+    const districtSelector = document.getElementById("districtSelector");
+    const districtSelectorContainer = document.getElementById("districtSelectorContainer");
+    const districtInfo = document.getElementById("districtInfo");
+    const districtName = document.getElementById("districtName");
+    const foodText = document.getElementById("foodText");
+    const festivalText = document.getElementById("festivalText");
+    const mapContainer = document.getElementById("mapContainer");
+    const stateButtons = document.querySelectorAll("#stateButtonGrid .col");
+
+    let map, currentMarker, selectedState = null;
+
+    // Handle state button click
+    stateButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            selectedState = btn.getAttribute("data-state");
+
+            // Highlight selected button
+            stateButtons.forEach(b => b.querySelector("button").classList.remove("bg-warning", "text-white"));
+            btn.querySelector("button").classList.add("bg-warning", "text-white");
+
+            // Load districts
+            districtSelector.innerHTML = `<option value="">-- Select a District --</option>`;
+            Object.keys(data[selectedState]).forEach(dist => {
+                const option = document.createElement("option");
+                option.value = dist;
+                option.textContent = dist;
+                districtSelector.appendChild(option);
+            });
+
+            districtSelectorContainer.style.display = "block";
+            districtInfo.style.display = "none";
+            mapContainer.style.display = "none";
+        });
+    });
+
+    districtSelector.addEventListener("change", () => {
+        const dist = districtSelector.value;
+        if (!selectedState || !data[selectedState][dist]) return;
+
+        districtInfo.style.display = "block";
+        mapContainer.style.display = "none";
+
+        districtName.textContent = dist;
+        foodText.textContent = data[selectedState][dist].food;
+        festivalText.textContent = data[selectedState][dist].festivals;
+    });
+
+    function showMap() {
+        const dist = districtSelector.value;
+        const details = data[selectedState][dist];
+
+        mapContainer.style.display = "block";
+
+        if (!map) {
+            map = L.map("map").setView([details.lat, details.lng], 8);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        } else {
+            map.setView([details.lat, details.lng], 8);
+            if (currentMarker) map.removeLayer(currentMarker);
+        }
+
+        currentMarker = L.marker([details.lat, details.lng]).addTo(map)
+            .bindPopup(`<b>${dist}</b><br>${details.food}<br>${details.festivals}`).openPopup();
+    }
+</script>
+
+{% endblock %} {% endcomment %}
+
+
+
+{% comment %} {% extends 'heritage/base.html' %}
+{% block content %}
+
+<h2 class="text-center mt-4">Explore India's Cultural Richness</h2>
+
+<div class="container my-4">
+    <div class="mb-3">
+        <label for="stateSelector" class="form-label">Select State</label>
+        <select class="form-select" id="stateSelector">
+            <option value="">-- Select a State --</option>
+            <option value="karnataka">Karnataka</option>
+            <option value="rajasthan">Rajasthan</option>
+            <option value="tamilnadu">Tamil Nadu</option>
+            <option value="kerala">Kerala</option>
+            <option value="uttarpradesh">Uttar Pradesh</option>
+            <option value="westbengal">West Bengal</option>
+        </select>
+    </div>
+
+    <div id="districtSelectorContainer" class="mb-3" style="display:none;">
+        <label for="districtSelector" class="form-label">Select District</label>
+        <select class="form-select" id="districtSelector">
+            <option value="">-- Select a District --</option>
+        </select>
+    </div>
+
+    <div id="districtInfo" class="mt-4" style="display:none;">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h4 id="districtName" class="card-title text-primary"></h4>
+                <p class="card-text">
+                    <strong>Food:</strong> <span id="foodText"></span><br>
+                    <strong>Festivals:</strong> <span id="festivalText"></span>
+                </p>
+                <button class="btn btn-outline-success" onclick="showMap()">View Map</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mapContainer" style="display:none;">
+        <h5 class="mt-4">Tourist Map</h5>
+        <div id="map" style="height: 400px;" class="rounded shadow-sm"></div>
+    </div>
+</div>
+
+<!-- Leaflet Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    const data = {
+        karnataka: {
+            "Bengaluru": {
+                food: "Bisi Bele Bath, Masala Dosa",
+                festivals: "Karaga Festival, Kannada Rajyotsava",
+                lat: 12.9716,
+                lng: 77.5946
+            },
+            "Mysuru": {
+                food: "Mysore Pak, Idli-Vada",
+                festivals: "Dasara Festival",
+                lat: 12.2958,
+                lng: 76.6394
+            }
+        },
+        rajasthan: {
+            "Jaipur": {
+                food: "Dal Baati Churma, Ghevar",
+                festivals: "Teej, Jaipur Literature Fest",
+                lat: 26.9124,
+                lng: 75.7873
+            },
+            "Jodhpur": {
+                food: "Mirchi Bada, Mawa Kachori",
+                festivals: "Marwar Festival",
+                lat: 26.2389,
+                lng: 73.0243
+            }
+        },
+        tamilnadu: {
+            "Chennai": {
+                food: "Sambar, Pongal, Filter Coffee",
+                festivals: "Pongal, Music Season",
+                lat: 13.0827,
+                lng: 80.2707
+            },
+            "Madurai": {
+                food: "Jigarthanda, Parotta",
+                festivals: "Chithirai Festival",
+                lat: 9.9252,
+                lng: 78.1198
+            }
+        },
+        kerala: {
+            "Kochi": {
+                food: "Appam with Stew, Kerala Sadya",
+                festivals: "Onam, Cochin Carnival",
+                lat: 9.9312,
+                lng: 76.2673
+            },
+            "Alappuzha": {
+                food: "Seafood, Payasam",
+                festivals: "Nehru Trophy Boat Race",
+                lat: 9.4981,
+                lng: 76.3388
+            }
+        },
+        uttarpradesh: {
+            "Agra": {
+                food: "Petha, Mughlai Cuisine",
+                festivals: "Taj Mahotsav",
+                lat: 27.1767,
+                lng: 78.0081
+            },
+            "Varanasi": {
+                food: "Kachori-Sabzi, Rabri",
+                festivals: "Dev Deepawali, Ganga Mahotsav",
+                lat: 25.3176,
+                lng: 82.9739
+            }
+        },
+        westbengal: {
+            "Kolkata": {
+                food: "Rasgulla, Fish Curry",
+                festivals: "Durga Puja, Poila Boishakh",
+                lat: 22.5726,
+                lng: 88.3639
+            },
+            "Darjeeling": {
+                food: "Momos, Thukpa",
+                festivals: "Teej, Losar",
+                lat: 27.0360,
+                lng: 88.2627
+            }
+        }
+    };
+
+    const stateSelector = document.getElementById("stateSelector");
+    const districtSelectorContainer = document.getElementById("districtSelectorContainer");
+    const districtSelector = document.getElementById("districtSelector");
+    const districtInfo = document.getElementById("districtInfo");
+    const districtName = document.getElementById("districtName");
+    const foodText = document.getElementById("foodText");
+    const festivalText = document.getElementById("festivalText");
+    const mapContainer = document.getElementById("mapContainer");
+
+    let map, currentMarker;
+
+    stateSelector.addEventListener("change", () => {
+        const selectedState = stateSelector.value;
+        if (!selectedState || !data[selectedState]) return;
+
+        districtSelector.innerHTML = `<option value="">-- Select a District --</option>`;
+        Object.keys(data[selectedState]).forEach(dist => {
+            const option = document.createElement("option");
+            option.value = dist;
+            option.textContent = dist;
+            districtSelector.appendChild(option);
+        });
+
+        districtSelectorContainer.style.display = "block";
+        districtInfo.style.display = "none";
+        mapContainer.style.display = "none";
+    });
+
+    districtSelector.addEventListener("change", () => {
+        const state = stateSelector.value;
+        const dist = districtSelector.value;
+        if (!data[state] || !data[state][dist]) return;
+
+        districtInfo.style.display = "block";
+        mapContainer.style.display = "none";
+
+        districtName.textContent = dist;
+        foodText.textContent = data[state][dist].food;
+        festivalText.textContent = data[state][dist].festivals;
+    });
+
+    function showMap() {
+        const state = stateSelector.value;
+        const dist = districtSelector.value;
+        const details = data[state][dist];
+
+        mapContainer.style.display = "block";
+
+        if (!map) {
+            map = L.map("map").setView([details.lat, details.lng], 8);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        } else {
+            map.setView([details.lat, details.lng], 8);
+            if (currentMarker) map.removeLayer(currentMarker);
+        }
+
+        currentMarker = L.marker([details.lat, details.lng]).addTo(map)
+            .bindPopup(`<b>${dist}</b><br>${details.food}<br>${details.festivals}`).openPopup();
+    }
+</script>
+
+{% endblock %} {% endcomment %}
+
+
+
+{% comment %} {% extends 'heritage/base.html' %}
+{% block content %}
+
+<h2 class="text-center mt-4">Explore India's Cultural Richness</h2>
+
+<div class="container my-4">
+    <div class="mb-3">
+        <label for="stateSelector" class="form-label">Select State</label>
+        <select class="form-select" id="stateSelector">
+            <option value="">-- Select a State --</option>
+            <option value="karnataka">Karnataka</option>
+            <option value="rajasthan">Rajasthan</option>
+            <option value="tamilnadu">Tamil Nadu</option>
+            <option value="kerala">Kerala</option>
+            <option value="uttarpradesh">Uttar Pradesh</option>
+            <option value="westbengal">West Bengal</option>
+        </select>
+    </div>
+
+    <div id="districtSelectorContainer" class="mb-3" style="display:none;">
+        <label for="districtSelector" class="form-label">Select District</label>
+        <select class="form-select" id="districtSelector">
+            <option value="">-- Select a District --</option>
+        </select>
+    </div>
+
+    <div id="districtInfo" class="mt-4" style="display:none;">
+        <h4 id="districtName" class="text-primary"></h4>
+        <p id="specialties"></p>
+        <button class="btn btn-outline-success" onclick="showMap()">View Map</button>
+    </div>
+
+    <div id="mapContainer" style="display:none;">
+        <h5 class="mt-4">Tourist Map</h5>
+        <div id="map" style="height: 400px;"></div>
+    </div>
+</div>
+
+<!-- Leaflet Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    const data = {
+        karnataka: {
+            "Bengaluru": {
+                food: "Bisi Bele Bath, Masala Dosa",
+                festivals: "Karaga Festival, Kannada Rajyotsava",
+                lat: 12.9716,
+                lng: 77.5946
+            },
+            "Mysuru": {
+                food: "Mysore Pak, Idli-Vada",
+                festivals: "Dasara Festival",
+                lat: 12.2958,
+                lng: 76.6394
+            }
+        },
+        rajasthan: {
+            "Jaipur": {
+                food: "Dal Baati Churma, Ghevar",
+                festivals: "Teej, Jaipur Literature Fest",
+                lat: 26.9124,
+                lng: 75.7873
+            },
+            "Jodhpur": {
+                food: "Mirchi Bada, Mawa Kachori",
+                festivals: "Marwar Festival",
+                lat: 26.2389,
+                lng: 73.0243
+            }
+        },
+        tamilnadu: {
+            "Chennai": {
+                food: "Sambar, Pongal, Filter Coffee",
+                festivals: "Pongal, Music Season",
+                lat: 13.0827,
+                lng: 80.2707
+            },
+            "Madurai": {
+                food: "Jigarthanda, Parotta",
+                festivals: "Chithirai Festival",
+                lat: 9.9252,
+                lng: 78.1198
+            }
+        },
+        kerala: {
+            "Kochi": {
+                food: "Appam with Stew, Kerala Sadya",
+                festivals: "Onam, Cochin Carnival",
+                lat: 9.9312,
+                lng: 76.2673
+            },
+            "Alappuzha": {
+                food: "Seafood, Payasam",
+                festivals: "Nehru Trophy Boat Race",
+                lat: 9.4981,
+                lng: 76.3388
+            }
+        },
+        uttarpradesh: {
+            "Agra": {
+                food: "Petha, Mughlai Cuisine",
+                festivals: "Taj Mahotsav",
+                lat: 27.1767,
+                lng: 78.0081
+            },
+            "Varanasi": {
+                food: "Kachori-Sabzi, Rabri",
+                festivals: "Dev Deepawali, Ganga Mahotsav",
+                lat: 25.3176,
+                lng: 82.9739
+            }
+        },
+        westbengal: {
+            "Kolkata": {
+                food: "Rasgulla, Fish Curry",
+                festivals: "Durga Puja, Poila Boishakh",
+                lat: 22.5726,
+                lng: 88.3639
+            },
+            "Darjeeling": {
+                food: "Momos, Thukpa",
+                festivals: "Teej, Losar",
+                lat: 27.0360,
+                lng: 88.2627
+            }
+        }
+    };
+
+    const stateSelector = document.getElementById("stateSelector");
+    const districtSelectorContainer = document.getElementById("districtSelectorContainer");
+    const districtSelector = document.getElementById("districtSelector");
+    const districtInfo = document.getElementById("districtInfo");
+    const districtName = document.getElementById("districtName");
+    const specialties = document.getElementById("specialties");
+    const mapContainer = document.getElementById("mapContainer");
+
+    let map, currentMarker;
+
+    stateSelector.addEventListener("change", () => {
+        const selectedState = stateSelector.value;
+        if (!selectedState || !data[selectedState]) return;
+
+        // Clear and populate district dropdown
+        districtSelector.innerHTML = `<option value="">-- Select a District --</option>`;
+        Object.keys(data[selectedState]).forEach(dist => {
+            const option = document.createElement("option");
+            option.value = dist;
+            option.textContent = dist;
+            districtSelector.appendChild(option);
+        });
+
+        districtSelectorContainer.style.display = "block";
+        districtInfo.style.display = "none";
+        mapContainer.style.display = "none";
+    });
+
+    districtSelector.addEventListener("change", () => {
+        const state = stateSelector.value;
+        const dist = districtSelector.value;
+        if (!data[state] || !data[state][dist]) return;
+
+        districtInfo.style.display = "block";
+        mapContainer.style.display = "none";
+
+        districtName.textContent = dist;
+        specialties.innerHTML = `
+            <strong>Food:</strong> ${data[state][dist].food}<br>
+            <strong>Festivals:</strong> ${data[state][dist].festivals}
+        `;
+    });
+
+    function showMap() {
+        const state = stateSelector.value;
+        const dist = districtSelector.value;
+        const details = data[state][dist];
+
+        mapContainer.style.display = "block";
+
+        if (!map) {
+            map = L.map("map").setView([details.lat, details.lng], 8);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        } else {
+            map.setView([details.lat, details.lng], 8);
+            if (currentMarker) map.removeLayer(currentMarker);
+        }
+
+        currentMarker = L.marker([details.lat, details.lng]).addTo(map)
+            .bindPopup(`<b>${dist}</b><br>${details.food}<br>${details.festivals}`).openPopup();
+    }
+</script>
+
+{% endblock %} {% endcomment %}
+
+
+{% comment %} {% extends 'heritage/base.html' %}
+{% block content %}
+<h2>Interactive Heritage Map</h2>
+<div id="map" style="height: 500px;"></div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    var map = L.map('map').setView([20.5937, 78.9629], 5); // India center
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    {% for place in places %}
+        L.marker([{{ place.latitude }}, {{ place.longitude }}]).addTo(map)
+         .bindPopup("<b>{{ place.name }}</b><br>{{ place.region }}<br><a href='{{ place.qr_info_link }}' target='_blank'>Explore More</a>");
+    {% endfor %}
+</script>
+{% endblock %} {% endcomment %}
+
+
+
+{% comment %} <!DOCTYPE html>
+<html>
+<head>
+    <title>CulturEra - Karnataka Explorer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        .clickable-img {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .clickable-img:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <h1 class="text-center text-primary">Explore Karnataka</h1>
+    <p class="text-center">Click on the image of Karnataka to discover its cultural gems!</p>
+
+    <!-- Karnataka Map from Wikimedia -->
+    <div class="text-center">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Karnataka_districts_map.svg/800px-Karnataka_districts_map.svg.png" alt="Karnataka Map" class="img-fluid clickable-img" onclick="showDistricts()">
+    </div>
+
+    <!-- Districts (initially hidden) -->
+    <div id="districtSection" class="mt-5" style="display: none;">
+        <h3 class="text-center text-success">Select a District</h3>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card clickable-img" onclick="showSpecialty('Mysuru')">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/0a/Mysore_Palace_Front_view.jpg" class="card-img-top" alt="Mysuru">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Mysuru</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card clickable-img" onclick="showSpecialty('Hampi')">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e5/Virupaksha_Temple_Hampi.jpg" class="card-img-top" alt="Hampi">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Hampi</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card clickable-img" onclick="showSpecialty('Coorg')">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/7/70/Abbey_Falls%2C_Coorg.jpg" class="card-img-top" alt="Coorg">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Coorg</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Specialties section -->
+    <div id="specialtySection" class="mt-5" style="display: none;">
+        <h3 class="text-center text-info" id="districtName"></h3>
+        <ul class="list-group mb-3" id="specialtyList"></ul>
+        <div class="text-center">
+            <button class="btn btn-outline-primary" onclick="showMap()">View on Map</button>
+        </div>
+    </div>
+
+    <!-- Map (initially hidden) -->
+    <div id="mapSection" class="mt-5" style="display: none;">
+        <h4 class="text-center">Map View</h4>
+        <div id="map" style="height: 400px;"></div>
+    </div>
+</div>
+
+<script>
+    function showDistricts() {
+        document.getElementById('districtSection').style.display = 'block';
+    }
+
+    function showSpecialty(district) {
+        const specialties = {
+            'Mysuru': ['Mysore Palace', 'Dasara Festival', 'Mysore Pak', 'Silk Sarees'],
+            'Hampi': ['Ancient Ruins', 'UNESCO Site', 'Vijayanagar Architecture', 'Virupaksha Temple'],
+            'Coorg': ['Coffee Plantations', 'Coorgi Cuisine', 'Madikeri Fort', 'Abbey Falls']
+        };
+
+        const specialtyList = document.getElementById('specialtyList');
+        specialtyList.innerHTML = '';
+        specialties[district].forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item';
+            li.textContent = item;
+            specialtyList.appendChild(li);
+        });
+
+        document.getElementById('districtName').textContent = `Specialties of ${district}`;
+        document.getElementById('specialtySection').style.display = 'block';
+        document.getElementById('mapSection').style.display = 'none';
+    }
+
+    function showMap() {
+        document.getElementById('mapSection').style.display = 'block';
+
+        const map = L.map('map').setView([12.2958, 76.6394], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const districtCoords = {
+            'Mysuru': [12.2958, 76.6394],
+            'Hampi': [15.3350, 76.4600],
+            'Coorg': [12.3375, 75.8069]
+        };
+
+        const currentDistrict = document.getElementById('districtName').textContent.replace('Specialties of ', '');
+        const coords = districtCoords[currentDistrict];
+
+        if (coords) {
+            L.marker(coords).addTo(map)
+             .bindPopup(currentDistrict).openPopup();
+            map.setView(coords, 10);
+        }
+    }
+</script>
+</body>
+</html> {% endcomment %}
+

@@ -1,0 +1,28 @@
+<!-- dashboard.html -->
+{% extends 'heritage/base.html' %}
+{% block content %}
+  <h2>Hello, {{ user.first_name }} 👋</h2>
+  <p>Explore the cultural universe here.</p>
+
+  <div>
+    <a href="{% url 'map' %}" class="btn btn-outline-primary">Map</a>
+    <a href="{% url 'chatbot' %}" class="btn btn-outline-secondary">Chatbot</a>
+    <a href="{% url 'donate' %}" class="btn btn-outline-success">Donate</a>
+    <a href="{% url 'calendar' %}" class="btn btn-outline-warning">Cultural Calendar</a>
+    <a href="{% url 'etiquette' %}" class="btn btn-outline-info">Cultural Etiquette</a>
+    <a href="{% url 'hidden_gems' %}" class="btn btn-outline-primary mt-3">
+      🎥 Hidden Gems for YouTubers
+  </a>
+  <a href="{% url 'submit_hidden_gem' %}" class="btn btn-outline-success mt-3">➕ Add Hidden Gem</a>
+
+  
+  </div>
+{% endblock %}
+
+
+{% comment %} {% extends 'heritage/base.html' %}
+{% block content %}
+<a href="{% url 'dashboard' %}" class="btn btn-light">Dashboard</a>
+<h2>Hello, {{ user.username }} 👋</h2>
+<p>Explore the cultural universe here.</p>
+{% endblock %} {% endcomment %}

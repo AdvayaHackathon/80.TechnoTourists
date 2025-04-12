@@ -1,0 +1,265 @@
+{% extends 'heritage/base.html' %}
+
+{% block content %}
+<div class="container mt-4" style="background: linear-gradient(135deg, #2c3e50, #34495e); padding: 20px; border-radius: 10px;">
+  <h2 class="text-center mb-4" style="color: white;">Cultural Calendar 2025 📅</h2>
+
+  <style>
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    .month {
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      background-color: #2c3e50;
+    }
+    .month h3 {
+      background-color: #34495e;
+      padding: 8px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      color: white;
+    }
+    .festival {
+      font-size: 14px;
+      margin: 4px 0;
+      color: white;
+    }
+    .jan { color: #f39c12; }
+    .feb { color: #d35400; }
+    .mar { color: #e74c3c; }
+    .apr { color: #8e44ad; }
+    .may { color: #3498db; }
+    .jun { color: #1abc9c; }
+    .jul { color: #2ecc71; }
+    .aug { color: #27ae60; }
+    .sep { color: #9b59b6; }
+    .oct { color: #e67e22; }
+    .nov { color: #e84393; }
+    .dec { color: #c0392b; }
+  </style>
+
+  <div class="calendar">
+    <div class="month">
+      <h3>January</h3>
+      <div class="festival jan">14 - Pongal Festival</div>
+      <div class="festival jan">26 - Republic Day</div>
+    </div>
+    <div class="month">
+      <h3>February</h3>
+      <div class="festival feb">14 - Vasant Panchami</div>
+    </div>
+    <div class="month">
+      <h3>March</h3>
+      <div class="festival mar">14 - Holi</div>
+      <div class="festival mar">31 - Ramadan Begins</div>
+    </div>
+    <div class="month">
+      <h3>April</h3>
+      <div class="festival apr">09 - Ugadi</div>
+      <div class="festival apr">13 - Baisakhi</div>
+    </div>
+    <div class="month">
+      <h3>May</h3>
+      <div class="festival may">23 - Buddha Purnima</div>
+    </div>
+    <div class="month">
+      <h3>June</h3>
+      <div class="festival jun">16 - Eid al-Adha</div>
+    </div>
+    <div class="month">
+      <h3>July</h3>
+      <div class="festival jul">07 - Rath Yatra</div>
+    </div>
+    <div class="month">
+      <h3>August</h3>
+      <div class="festival aug">15 - Independence Day</div>
+      <div class="festival aug">19 - Raksha Bandhan</div>
+      <div class="festival aug">28 - Janmashtami</div>
+    </div>
+    <div class="month">
+      <h3>September</h3>
+      <div class="festival sep">07 - Ganesh Chaturthi</div>
+      <div class="festival sep">26 - Navratri Begins</div>
+    </div>
+    <div class="month">
+      <h3>October</h3>
+      <div class="festival oct">02 - Gandhi Jayanti</div>
+      <div class="festival oct">12 - Dussehra</div>
+      <div class="festival oct">20 - Diwali</div>
+    </div>
+    <div class="month">
+      <h3>November</h3>
+      <div class="festival nov">02 - Bhai Dooj</div>
+      <div class="festival nov">03 - Chhath Puja</div>
+      <div class="festival nov">15 - Guru Nanak Jayanti</div>
+    </div>
+    <div class="month">
+      <h3>December</h3>
+      <div class="festival dec">25 - Christmas</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% comment %} {% extends 'heritage/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="text-center mb-4">🗓️ Cultural Calendar of India</h2>
+  <div class="card shadow-lg">
+    <div class="card-body">
+      <div id="calendar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      height: 'auto',
+      eventDidMount: function(info) {
+        const date = new Date(info.event.start);
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const formattedDate = date.toLocaleDateString('en-US', options);
+        info.el.title = `${info.event.title} - ${formattedDate}`;
+      },
+      events: [
+        { title: 'Pongal Festival', start: '2025-01-14', color: '#f39c12' },
+        { title: 'Republic Day', start: '2025-01-26', color: '#27ae60' },
+        { title: 'Holi Celebration', start: '2025-03-14', color: '#e74c3c' },
+        { title: 'Ramadan Begins', start: '2025-03-31', color: '#3498db' },
+        { title: 'Independence Day', start: '2025-08-15', color: '#2ecc71' },
+        { title: 'Navratri Begins', start: '2025-09-26', color: '#9b59b6' },
+        { title: 'Diwali', start: '2025-10-20', color: '#e67e22' },
+        { title: 'Christmas', start: '2025-12-25', color: '#c0392b' }
+      ]
+    });
+    calendar.render();
+  });
+</script>
+{% endblock %} {% endcomment %}
+
+
+{% comment %} {% extends 'heritage/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="text-center mb-4">📅 Cultural Calendar</h2>
+  <div id="calendar"></div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+  
+  <!-- FullCalendar JS -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var calendarEl = document.getElementById('calendar');
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        height: 'auto',
+        events: [
+          { title: 'Pongal Festival', start: '2025-01-14', color: '#f39c12' },
+          { title: 'Republic Day', start: '2025-01-26', color: '#27ae60' },
+          { title: 'Holi Celebration', start: '2025-03-14', color: '#e74c3c' },
+          { title: 'Ramadan Begins', start: '2025-03-31', color: '#3498db' },
+          { title: 'Independence Day', start: '2025-08-15', color: '#2ecc71' },
+          { title: 'Navratri Begins', start: '2025-09-26', color: '#9b59b6' },
+          { title: 'Diwali', start: '2025-10-20', color: '#e67e22' },
+          { title: 'Christmas', start: '2025-12-25', color: '#c0392b' }
+        ]
+      });
+      calendar.render();
+    });
+  </script>
+{% endblock %} {% endcomment %}
+
+
+
+
+
+{% comment %} {% extends 'heritage/base.html' %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h2 class="mb-4 text-center">Cultural Calendar 📅</h2>
+    <div id="calendar"></div>
+  </div>
+
+  <!-- FullCalendar CSS (Include inside content block) -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+
+  <!-- FullCalendar JS (Include inside content block) -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var calendarEl = document.getElementById('calendar');
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        height: 'auto',
+        events: [
+          { title: 'Pongal Festival', start: '2025-01-14', color: '#f39c12' },
+          { title: 'Republic Day', start: '2025-01-26', color: '#27ae60' },
+          { title: 'Holi Celebration', start: '2025-03-14', color: '#e74c3c' },
+          { title: 'Ramadan Begins', start: '2025-03-31', color: '#3498db' },
+          { title: 'Independence Day', start: '2025-08-15', color: '#2ecc71' },
+          { title: 'Navratri Begins', start: '2025-09-26', color: '#9b59b6' },
+          { title: 'Diwali', start: '2025-10-20', color: '#e67e22' },
+          { title: 'Christmas', start: '2025-12-25', color: '#c0392b' }
+        ]
+      });
+      calendar.render();
+    });
+  </script> {% endcomment %}
+
+  {% comment %} <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            height: 'auto',
+            events: '/api/cultural-events/' // This is your dynamic endpoint
+        });
+        calendar.render();
+    });
+    </script>
+    
+{% endblock %}{% endcomment %}
+
+
+
+{% comment %} {% extends 'heritage/base.html' %}
+{% block content %} {% endcomment %}
+<!-- FullCalendar CSS -->
+{% comment %} <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+<h2>Cultural Calendar 📅</h2>
+<ul>
+  {% for place in places %}
+    {% if place.festival_date %}
+    <li><b>{{ place.name }} ({{ place.region }}):</b> {{ place.festival_date }}</li>
+    {% endif %}
+  {% endfor %}
+</ul>
+{% endblock %} {% endcomment %}

@@ -1,9 +1,0 @@
-{% extends 'heritage/base.html' %}
-{% block content %}
-<h2>Cultural Etiquette Guide</h2>
-<ul>
-  {% for place in places %}
-    <li><b>{{ place.name }} ({{ place.region }}):</b><br> {{ place.etiquette }}</li>
-  {% endfor %}
-</ul>
-{% endblock %}
